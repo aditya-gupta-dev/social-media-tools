@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"social-media-tools/downloader"
@@ -132,7 +133,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.state != stateDownloading {
 				return m, m.openURLModal("")
 			}
-		case "C":
+		case "c", "C":
 			if m.state != stateDownloading {
 				m.usePWD = !m.usePWD
 				return m, nil
@@ -210,6 +211,43 @@ func (m model) startDownload() tea.Cmd {
 	return m.waitForProgress()
 }
 
+func (m model) currentDownloadPath() string {
+	platformName := "Other"
+	for _, p := range m.platforms {
+		if p.Match(m.url) {
+			platformName = p.GetName()
+			break
+		}
+	}
+
+	return storage.GetDownloadPath(m.mediaType, platformName, m.usePWD)
+}
+
+func formatDownloadPath(path string) string {
+	home, err := os.UserHomeDir()
+	if err == nil {
+		if rel, relErr := filepath.Rel(home, path); relErr == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			path = filepath.Join("~", rel)
+		}
+	}
+
+	cleaned := filepath.Clean(path)
+	parts := strings.Split(cleaned, string(filepath.Separator))
+	if len(parts) == 0 {
+		return cleaned
+	}
+
+	start := 0
+	if parts[0] == "" {
+		start = 1
+	}
+	if len(parts)-start <= 3 {
+		return cleaned
+	}
+
+	return filepath.Join(append([]string{"..."}, parts[len(parts)-3:]...)...)
+}
+
 func (m model) waitForProgress() tea.Cmd {
 	return func() tea.Msg {
 		return downloadProgressMsg(<-m.progressChan)
@@ -233,13 +271,19 @@ func (m model) View() string {
 		)
 
 	case stateSelecting:
+		locationLabel := "Default Path"
+		if m.usePWD {
+			locationLabel = "Current Directory"
+		}
+		displayPath := formatDownloadPath(m.currentDownloadPath())
 		innerContent = lipgloss.NewStyle().Width(m.width - 10).Align(lipgloss.Center).Render(
 			fmt.Sprintf("URL: %s\n\n", m.url) +
 				"Choose Format:\n\n" +
 				styles.Button("1. Video") + " " +
 				styles.Button("2. Audio") + " " +
 				styles.Button("3. Thumbnail") + "\n\n" +
-				styles.ShortcutHint.Render("Press 1, 2, or 3 • Press 'n' for a different URL"),
+				fmt.Sprintf("Download to: %s\n%s\n\n", locationLabel, displayPath) +
+				styles.ShortcutHint.Render("Press 1, 2, or 3 • Press 'c' to toggle path • Press 'n' for a different URL"),
 		)
 
 	case stateDownloading:
@@ -262,7 +306,7 @@ func (m model) View() string {
 		innerContent += "\n\n" + lipgloss.NewStyle().Width(m.width-10).Align(lipgloss.Center).Render(errStr)
 	}
 
-	if m.usePWD {
+	if m.usePWD && m.state != stateSelecting {
 		footer := "\n\n" + lipgloss.NewStyle().Width(m.width-10).Align(lipgloss.Center).Render(styles.ButtonInactive("Saving to: Current Directory"))
 		innerContent += footer
 	}
