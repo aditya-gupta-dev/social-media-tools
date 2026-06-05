@@ -131,6 +131,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "n":
 			if m.state != stateDownloading {
+				m.err = nil
 				return m, m.openURLModal("")
 			}
 		case "c", "C":
@@ -169,16 +170,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case downloadProgressMsg:
 		if msg.Err != nil {
 			m.err = msg.Err
+			m.state = stateFinished
 			m.downloading = false
 			return m, nil
 		}
 		if msg.Done {
 			m.state = stateFinished
 			m.downloading = false
-			return m, nil
+			cmd := m.progress.SetPercent(1.0)
+			return m, cmd
 		}
+		var cmds []tea.Cmd
 		if msg.Percent > 0 {
-			m.progress.SetPercent(msg.Percent)
+			cmds = append(cmds, m.progress.SetPercent(msg.Percent))
 		}
 		if msg.Log != "" {
 			m.logs = append(m.logs, msg.Log)
@@ -186,7 +190,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.logs = m.logs[1:]
 			}
 		}
-		return m, m.waitForProgress()
+		cmds = append(cmds, m.waitForProgress())
+		return m, tea.Batch(cmds...)
 
 	case progress.FrameMsg:
 		newModel, cmd := m.progress.Update(msg)
@@ -295,15 +300,26 @@ func (m model) View() string {
 		)
 
 	case stateFinished:
-		innerContent = lipgloss.NewStyle().Width(m.width - 10).Align(lipgloss.Center).Render(
-			"Download Complete!\n\n" +
-				styles.ShortcutHint.Render("Press 'q' to quit or 'n' for new"),
-		)
-	}
-
-	if m.err != nil {
-		errStr := lipgloss.NewStyle().Foreground(lipgloss.Color("#ff3b30")).Render(fmt.Sprintf("Error: %v", m.err))
-		innerContent += "\n\n" + lipgloss.NewStyle().Width(m.width-10).Align(lipgloss.Center).Render(errStr)
+		if m.err != nil {
+			errMsg := lipgloss.NewStyle().Foreground(lipgloss.Color("#ff3b30")).Bold(true).Render("✗ Download Failed")
+			errDetail := lipgloss.NewStyle().Foreground(lipgloss.Color("#ff6961")).Render(fmt.Sprintf("%v", m.err))
+			innerContent = lipgloss.NewStyle().Width(m.width - 10).Align(lipgloss.Center).Render(
+				errMsg + "\n\n" +
+				errDetail + "\n\n" +
+				styles.ShortcutHint.Render("Press 'n' to try again • Press 'q' to quit"),
+			)
+		} else {
+			successIcon := lipgloss.NewStyle().Foreground(lipgloss.Color("#30d158")).Bold(true).Render("✓ Download Complete!")
+			pathInfo := lipgloss.NewStyle().Foreground(lipgloss.Color("#86868b")).Render(
+				fmt.Sprintf("Saved to: %s", formatDownloadPath(m.currentDownloadPath())),
+			)
+			innerContent = lipgloss.NewStyle().Width(m.width - 10).Align(lipgloss.Center).Render(
+				successIcon + "\n\n" +
+				pathInfo + "\n\n" +
+				m.progress.View() + "\n\n" +
+				styles.ShortcutHint.Render("Press 'q' to quit • Press 'n' to download another"),
+			)
+		}
 	}
 
 	if m.usePWD && m.state != stateSelecting {
