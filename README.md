@@ -1,4 +1,4 @@
-# Social Media Tools
+# Social Media Tools v1.1.0
 
 A sleek, terminal-based media downloader built with Go and [Bubble Tea](https://github.com/charmbracelet/bubbletea). Download videos, audio, and thumbnails from YouTube (and other platforms supported by yt-dlp) — all from a beautiful TUI.
 
@@ -103,6 +103,7 @@ go run .
 | Video | `~/Videos/social-media-tools/<Platform>/` |
 | Audio | `~/Music/social-media-tools/<Platform>/` |
 | Thumbnail | `~/Pictures/social-media-tools/<Platform>/` |
+| Transcript | `~/Documents/social-media-tools/<Platform>/` |
 
 Press **`c`** to toggle saving to the **current working directory** instead.
 
