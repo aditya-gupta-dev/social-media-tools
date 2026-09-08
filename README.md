@@ -5,7 +5,7 @@ A sleek, terminal-based media downloader built with Go and [Bubble Tea](https://
 ## Features
 
 - **Clipboard Detection** — Automatically detects URLs copied to your clipboard.
-- **Multiple Formats** — Download as video, audio (MP3), or thumbnail.
+- **Multiple Formats** — Download as video, audio (MP3), thumbnail, or transcript (JSON).
 - **Live Progress** — Real-time progress bar and streaming yt-dlp logs.
 - **Smart Download Paths** — Automatically organises downloads by media type and platform (`~/Videos`, `~/Music`, `~/Pictures`), or save to the current directory.
 - **Apple-inspired Dark Theme** — Polished terminal UI with rounded borders, gradient progress bar, and styled buttons.
@@ -71,14 +71,17 @@ go run .
 
 # Or use the built binary
 ./smt
+
+# Check version
+./smt --version
 ```
 
 ### Workflow
 
 1. **Copy a URL** to your clipboard (e.g. a YouTube link) — the app will detect it automatically.
 2. If no URL is found, press **`n`** to manually enter one.
-3. **Choose a format**: press `1` for Video, `2` for Audio, `3` for Thumbnail.
-4. Watch the **live progress bar** and **streaming logs** as yt-dlp downloads your media.
+3. **Choose a format**: press `1` for Video, `2` for Audio, `3` for Thumbnail, `4` for Transcript.
+4. Watch the **live progress bar** and **streaming logs** as yt-dlp (or the internal transcript fetcher) downloads your media.
 5. When complete, you'll see the download path. Press **`n`** to download another, or **`q`** to quit.
 
 ### Keyboard Shortcuts
@@ -86,7 +89,7 @@ go run .
 | Key | Action |
 |---|---|
 | `n` | Enter / paste a new URL |
-| `1` `2` `3` | Select format (Video / Audio / Thumbnail) |
+| `1` `2` `3` `4` | Select format (Video / Audio / Thumbnail / Transcript) |
 | `c` | Toggle download path (default vs. current directory) |
 | `Ctrl+V` | Paste URL in the modal |
 | `Enter` | Confirm URL |

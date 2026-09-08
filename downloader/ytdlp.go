@@ -7,6 +7,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"encoding/json"
+	"os"
+	"path/filepath"
+
+
+	yttranscript "github.com/aditya-gupta-dev/go-yt-transcript"
 )
 
 type ProgressMsg struct {
@@ -17,6 +23,39 @@ type ProgressMsg struct {
 }
 
 func Download(url, mediaType, outputPath string, progress chan ProgressMsg) {
+	if mediaType == "transcript" {
+		progress <- ProgressMsg{Log: "Fetching transcript metadata..."}
+		snippets, err := yttranscript.GetTranscript(url)
+		if err != nil {
+			progress <- ProgressMsg{Err: fmt.Errorf("failed to fetch transcript: %w", err)}
+			return
+		}
+
+		progress <- ProgressMsg{Log: "Parsing transcript...", Percent: 0.5}
+		
+		id, _ := yttranscript.ExtractVideoID(url)
+		filename := filepath.Join(outputPath, id+"_transcript.json")
+		
+		file, err := os.Create(filename)
+		if err != nil {
+			progress <- ProgressMsg{Err: fmt.Errorf("failed to create file: %w", err)}
+			return
+		}
+		defer file.Close()
+
+		progress <- ProgressMsg{Log: "Saving to file...", Percent: 0.8}
+		
+		encoder := json.NewEncoder(file)
+		encoder.SetIndent("", "  ")
+		if err := encoder.Encode(snippets); err != nil {
+			progress <- ProgressMsg{Err: fmt.Errorf("failed to write json: %w", err)}
+			return
+		}
+
+		progress <- ProgressMsg{Log: "Done!", Done: true, Percent: 1.0}
+		return
+	}
+
 	var args []string
 	args = append(args, "--newline", "--progress")
 	args = append(args, "-o", outputPath+"/%(title)s.%(ext)s")

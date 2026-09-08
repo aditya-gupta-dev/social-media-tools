@@ -22,6 +22,8 @@ func GetDownloadPath(mediaType string, platformName string, usePWD bool) string 
 		folder = filepath.Join(home, "Videos", AppName, platformName)
 	case "thumbnail":
 		folder = filepath.Join(home, "Pictures", AppName, platformName)
+	case "transcript":
+		folder = filepath.Join(home, "Documents", AppName, platformName)
 	default:
 		folder = filepath.Join(home, "Downloads", AppName, platformName)
 	}

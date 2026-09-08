@@ -139,7 +139,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.usePWD = !m.usePWD
 				return m, nil
 			}
-		case "1", "2", "3":
+		case "1", "2", "3", "4":
 			if m.state == stateSelecting {
 				switch msg.String() {
 				case "1":
@@ -148,6 +148,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.mediaType = "audio"
 				case "3":
 					m.mediaType = "thumbnail"
+				case "4":
+					m.mediaType = "transcript"
 				}
 				m.state = stateDownloading
 				m.downloading = true
@@ -286,9 +288,10 @@ func (m model) View() string {
 				"Choose Format:\n\n" +
 				styles.Button("1. Video") + " " +
 				styles.Button("2. Audio") + " " +
-				styles.Button("3. Thumbnail") + "\n\n" +
+				styles.Button("3. Thumbnail") + " " +
+				styles.Button("4. Transcript") + "\n\n" +
 				fmt.Sprintf("Download to: %s\n%s\n\n", locationLabel, displayPath) +
-				styles.ShortcutHint.Render("Press 1, 2, or 3 • Press 'c' to toggle path • Press 'n' for a different URL"),
+				styles.ShortcutHint.Render("Press 1, 2, 3, or 4 • Press 'c' to toggle path • Press 'n' for a different URL"),
 		)
 
 	case stateDownloading:
@@ -348,7 +351,14 @@ func (m model) View() string {
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, fullView)
 }
 
+var Version = "1.0.0"
+
 func main() {
+	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
+		fmt.Printf("smt version %s\n", Version)
+		os.Exit(0)
+	}
+
 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error: %v", err)
