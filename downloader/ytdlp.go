@@ -34,7 +34,15 @@ func Download(url, mediaType, outputPath string, progress chan ProgressMsg) {
 		progress <- ProgressMsg{Log: "Parsing transcript...", Percent: 0.5}
 		
 		id, _ := yttranscript.ExtractVideoID(url)
-		filename := filepath.Join(outputPath, id+"_transcript.json")
+		
+		// Create a directory for this specific video ID
+		videoDir := filepath.Join(outputPath, id)
+		if err := os.MkdirAll(videoDir, 0755); err != nil {
+			progress <- ProgressMsg{Err: fmt.Errorf("failed to create video directory: %w", err)}
+			return
+		}
+		
+		filename := filepath.Join(videoDir, "transcript.json")
 		
 		file, err := os.Create(filename)
 		if err != nil {
